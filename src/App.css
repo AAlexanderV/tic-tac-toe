@@ -1,78 +1,138 @@
-.App{
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+.App {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-.game_section{
-    background-color: #14bdac;
-    width: 100%;
-    height: fit-content;
-    padding: 20px;
+.game_section {
+  background-color: #14bdac;
+  width: 100%;
+  height: fit-content;
+  padding: 20px;
 }
 
-.game_field{
-    margin: auto;
-    width: 600px;
-    height: 600px;
-    display: grid;
-    grid-template-columns: auto auto auto;
+.WaitModal,
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+}
+.WaitModal {
+  cursor: wait;
+}
+.overlay {
+  background-color: #b9fff373;
 }
 
-.field_element{
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: relative;
+.GameOverModal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: absolute;
+  top: 150px;
+  left: 50%;
+  transform: translateX(-50%);
+
+  background-color: #fff;
+  border-radius: 10px;
+
+  padding: 50px 60px;
+}
+.gameOver_status h1 {
+  text-align: center;
+}
+.GameOverModal button {
+  margin-top: 30px;
+  margin-bottom: 30px;
+  padding: 10px 30px;
+  font-size: 18px;
+  font-weight: 600;
+  border-radius: 10px;
+  border: none;
+  background-color: #6ab600;
+  cursor: pointer;
+  transition: all linear 0.2s;
+}
+.GameOverModal button:hover {
+  scale: 0.95;
 }
 
-.number-1, .number-2, .number-4, .number-5{
-    border-right: 8px solid #64646452;
-    border-bottom: 8px solid #64646452;
+.score_item span {
+  font-weight: 700;
 }
 
-.number-3, .number-6{
-    border-bottom: 8px solid #64646452;
+.game_field {
+  margin: auto;
+  width: 600px;
+  height: 600px;
+  display: grid;
+  flex-shrink: 1;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
 }
 
-.number-7, .number-8{
-    border-right: 8px solid #64646452;
+.field_element {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+.number-1,
+.number-2,
+.number-4,
+.number-5 {
+  border-right: 8px solid #64646452;
+  border-bottom: 8px solid #64646452;
+}
+
+.number-3,
+.number-6 {
+  border-bottom: 8px solid #64646452;
+}
+
+.number-7,
+.number-8 {
+  border-right: 8px solid #64646452;
 }
 
 .zero {
-    width: 70%;
-    height: 70%;
-    border: 15px solid rgb(232, 230, 205);
-    border-radius: 50%;
+  width: 70%;
+  height: 70%;
+  border: 15px solid rgb(232, 230, 205);
+  border-radius: 50%;
 }
 
 .x {
-    display: block;
-    background: none;
-    width: 80%;
-    height: 15px;
-    margin: auto;
+  display: block;
+  background: none;
+  width: 80%;
+  height: 15px;
+  margin: auto;
 }
 
 .x::before,
 .x::after {
-    content: "";
-    width: 80%;
-    height: 15px;
-    background-color: #fff;
-    position: absolute;
+  content: "";
+  width: 80%;
+  height: 15px;
+  background-color: #fff;
+  position: absolute;
 }
 
 .x::before {
-    top: 10px;
-    transform-origin: center bottom;
-    transform: rotate(-45deg) translateX(-55px) translateY(62px);
-    background-color: rgb(0, 140, 255);
+  top: 10px;
+  transform-origin: center bottom;
+  transform: rotate(-45deg) translateX(-55px) translateY(62px);
+  background-color: rgb(0, 140, 255);
 }
 
 .x::after {
-    bottom: 10px;
-    transform-origin: left top;
-    transform: rotate(45deg) translateX(-70px) translateY(-113px);
-    background-color: rgb(0, 140, 255);
+  bottom: 10px;
+  transform-origin: left top;
+  transform: rotate(45deg) translateX(-70px) translateY(-113px);
+  background-color: rgb(0, 140, 255);
 }

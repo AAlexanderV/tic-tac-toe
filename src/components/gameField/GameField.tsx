@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import FieldElement from "./FieldElement";
-import treeFromLS from "../../app/treeFromLS";
+import WaitModal from "../modalWindows/WaitModal";
+import GameOverModal from "../modalWindows/GameOverModal";
+
+import updateCombinationsTree from "../../app/updateCombinationsTree";
 
 import humanScoreFromLS from "../../app/humanScoreFromLS";
 import AIScoreFromLS from "../../app/AIScoreFromLS";
@@ -13,15 +16,36 @@ import checkDraw from "../../app/checkDraw";
 import NodeElement from "../../app/NodeElement";
 
 function GameField() {
-  // // const combinationTest = "xoxoxoxox";
-  // let humanMovesFirst: boolean;
-  // let humanCanMove: boolean;
-  // let root: any;
-  // // let currentTreeElement: any;
+  // load combinationsTree from server
+  useEffect(() => {
+    fetch("http://localhost:8080/combinations")
+      .then((response) => response.json())
+      .then(
+        (data) => {
+          setRootIsLoaded(true);
+          setError(false);
 
-  const [root, setRoot] = useState(treeFromLS);
-  const [currentTreeElement, setCurrentTreeElement] = useState(root);
-  const [currentCombination, setCurrentCombination] = useState(currentTreeElement.combination);
+          setRoot(data);
+          setCurrentTreeElement(data);
+          setCurrentCombination(data.combination);
+
+          console.log(data);
+        },
+
+        (error) => {
+          console.log("result ERROR");
+          setRootIsLoaded(true);
+          setError(error);
+        }
+      );
+  }, []);
+
+  const [rootIsLoaded, setRootIsLoaded] = useState(false);
+  const [error, setError] = useState(false);
+
+  const [root, setRoot] = useState(null);
+  const [currentTreeElement, setCurrentTreeElement] = useState<any>(null);
+  const [currentCombination, setCurrentCombination] = useState<string | null>(null);
 
   const [humanCanMove, setHumanCanMove] = useState(true);
   const [humanMovesFirst, setHumanMovesFirst] = useState(true);
@@ -38,24 +62,28 @@ function GameField() {
   //
 
   useEffect(() => {
-    const AIWon = checkVictory(currentTreeElement.combination); // => x || o || false
-    // setDraw(checkDraw(currentTreeElement.combination));
+    if (rootIsLoaded && !error) {
+      const AIWon = checkVictory(currentTreeElement.combination); // => x || o || false
 
-    if (AIWon) {
-      setWinner("AI");
+      console.log("useEffect");
 
-      setAIScore(AIScore + 1);
-      localStorage.setItem("AIScore", JSON.stringify(AIScore + 1));
-      setHumanCanMove(false);
+      if (AIWon) {
+        setWinner("AI");
+        setHumanCanMove(true);
+
+        setAIScore(AIScore + 1);
+        localStorage.setItem("AIScore", JSON.stringify(AIScore + 1));
+      }
     }
-  }, [winner, AIScore, humanCanMove, currentTreeElement.combination]);
+    // }, [winner, AIScore, humanCanMove, currentTreeElement, rootIsLoaded, error]);
+  }, [currentTreeElement, currentCombination]);
 
   //
   // HUMAN made a move:
   function humanMove(cellIndex: number) {
     // console.log("cellIndex:", cellIndex);
 
-    if (!humanCanMove || winner || isDraw) return;
+    if (!humanCanMove || winner || isDraw || !currentCombination || !root) return;
 
     setHumanCanMove(false);
     const combinationArray = currentCombination.split("");
@@ -71,9 +99,11 @@ function GameField() {
 
     if (humanWon) {
       currentTreeElement.status = "red";
-      localStorage.setItem("combinationsTree", JSON.stringify(root));
+      // localStorage.setItem("combinationsTree", JSON.stringify(root));
+      updateCombinationsTree(root);
 
       setWinner("human");
+      setHumanCanMove(true);
 
       setHumanScore(humanScore + 1);
       localStorage.setItem("humanScore", JSON.stringify(humanScore + 1));
@@ -81,8 +111,9 @@ function GameField() {
       return;
     } else if (checkDraw(newCurrentCombination)) {
       currentTreeElement.status = "yellow";
-      localStorage.setItem("combinationsTree", JSON.stringify(root));
-
+      // localStorage.setItem("combinationsTree", JSON.stringify(root));
+      updateCombinationsTree(root);
+      setHumanCanMove(true);
       setDraw(true);
       setDrawCounter(drawCounter + 1);
       localStorage.setItem("draws", JSON.stringify(drawCounter + 1));
@@ -101,7 +132,8 @@ function GameField() {
       const child = new NodeElement(newCurrentCombination);
       currentTreeElement.children.push(child);
       setCurrentTreeElement(child);
-      localStorage.setItem("combinationsTree", JSON.stringify(root));
+      // localStorage.setItem("combinationsTree", JSON.stringify(root));
+      updateCombinationsTree(root);
 
       console.log("child", child);
 
@@ -119,6 +151,8 @@ function GameField() {
   // AIMove
   //
   function AIMove(newCurrentCombination: string, treeElement: any) {
+    if (!root) return;
+
     setHumanCanMove(true);
     // проверим, есть ли green "children"
     for (let i = 0; i < treeElement.children.length; i++) {
@@ -144,7 +178,8 @@ function GameField() {
           const newChild = new NodeElement(arrCombination.join(""));
           treeElement.children.push(newChild);
           setCurrentTreeElement(newChild);
-          localStorage.setItem("combinationsTree", JSON.stringify(root));
+          // localStorage.setItem("combinationsTree", JSON.stringify(root));
+          updateCombinationsTree(root);
 
           setCurrentCombination(newChild.combination);
 
@@ -158,7 +193,8 @@ function GameField() {
       if (treeElement.children[i].status === "yellow") {
         // if we enter here & found yellow, then parent el should be yellow as well
         treeElement.status = "yellow";
-        localStorage.setItem("combinationsTree", JSON.stringify(root));
+        // localStorage.setItem("combinationsTree", JSON.stringify(root));
+        updateCombinationsTree(root);
 
         setCurrentTreeElement(treeElement.children[i]);
 
@@ -170,7 +206,8 @@ function GameField() {
 
     // no green, no free space, no yellow => it's red
     currentTreeElement.status = "red";
-    localStorage.setItem("combinationsTree", JSON.stringify(root));
+    // localStorage.setItem("combinationsTree", JSON.stringify(root));
+    updateCombinationsTree(root);
 
     // propose draw
     const drawAccepted = window.confirm("Do you want a draw?");
@@ -178,35 +215,57 @@ function GameField() {
     //make some random move
     if (drawAccepted) {
       setDraw(drawAccepted);
+      setHumanCanMove(true);
 
       setDrawCounter(drawCounter + 1);
       localStorage.setItem("draws", JSON.stringify(drawCounter + 1));
 
       setHumanCanMove(false);
     } else {
-      const randomIndex = Math.floor(Math.random() * currentTreeElement.children.length - 1);
+      const randomIndex = Math.floor(Math.random() * currentTreeElement.children.length);
       setCurrentTreeElement(treeElement.children[randomIndex]);
 
       setCurrentCombination(currentTreeElement.combination);
     }
   }
 
-  return (
-    <div className="game_section">
-      <div className="game_field">
-        {currentCombination.split("").map((value: string, index: number) => {
-          return (
-            <FieldElement
-              value={value}
-              index={index}
-              humanMove={humanMove}
-              key={index}
-            />
-          );
-        })}
+  if (!rootIsLoaded) {
+    return <h1>Loading...</h1>;
+  } else if (error || !currentCombination) {
+    return <h1>Ooops! Error occurred. Please try again later.</h1>;
+  } else {
+    return (
+      <div className="game_section">
+        <WaitModal humanCanMove={humanCanMove} />
+        <GameOverModal
+          humanScore={humanScore}
+          AIScore={AIScore}
+          drawCounter={drawCounter}
+          winner={winner}
+          isDraw={isDraw}
+          restart={() => {
+            setCurrentTreeElement(root);
+            setCurrentCombination("---------");
+            setDraw(false);
+            setWinner(null);
+            setHumanCanMove(true);
+          }}
+        />
+        <div className="game_field">
+          {currentCombination.split("").map((value: string, index: number) => {
+            return (
+              <FieldElement
+                value={value}
+                index={index}
+                humanMove={humanMove}
+                key={index}
+              />
+            );
+          })}
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
 }
 
 export default GameField;

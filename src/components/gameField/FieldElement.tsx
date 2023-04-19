@@ -18,6 +18,7 @@ function FieldElement({
     <div
       onClick={clickHandler}
       className={"field_element number-" + (index + 1)}
+      style={value === "-" ? { cursor: "pointer" } : { cursor: "not-allowed" }}
     >
       {(() => {
         switch (value) {
