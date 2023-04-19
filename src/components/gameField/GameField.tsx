@@ -48,7 +48,8 @@ function GameField() {
   const [currentCombination, setCurrentCombination] = useState<string | null>(null);
 
   const [humanCanMove, setHumanCanMove] = useState(true);
-  const [humanMovesFirst, setHumanMovesFirst] = useState(true);
+  // const [humanMovesFirst, setHumanMovesFirst] = useState(true);
+  const humanMovesFirst = true;
 
   const [winner, setWinner] = useState<string | null>(null);
   const [isDraw, setDraw] = useState<boolean>(false);
@@ -76,7 +77,7 @@ function GameField() {
       }
     }
     // }, [winner, AIScore, humanCanMove, currentTreeElement, rootIsLoaded, error]);
-  }, [currentTreeElement, currentCombination]);
+  }, [currentTreeElement, currentCombination, AIScore, error, rootIsLoaded]);
 
   //
   // HUMAN made a move:
