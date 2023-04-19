@@ -18,7 +18,7 @@ import NodeElement from "../../app/NodeElement";
 function GameField() {
   // load combinationsTree from server
   useEffect(() => {
-    fetch("http://localhost:8080/combinations")
+    fetch("https://server-for-tic-tac-toe.herokuapp.com/combinations")
       .then((response) => response.json())
       .then(
         (data) => {
@@ -127,7 +127,10 @@ function GameField() {
     if (childIndex !== false) {
       setCurrentTreeElement(currentTreeElement.children[childIndex]);
 
-      AIMove(newCurrentCombination, currentTreeElement.children[childIndex]);
+      // AIMove(newCurrentCombination, currentTreeElement.children[childIndex]);
+      setTimeout(() => {
+        AIMove(newCurrentCombination, currentTreeElement.children[childIndex]);
+      }, 1000);
     } else {
       const child = new NodeElement(newCurrentCombination);
       currentTreeElement.children.push(child);
@@ -137,14 +140,11 @@ function GameField() {
 
       console.log("child", child);
 
-      AIMove(newCurrentCombination, child);
+      // AIMove(newCurrentCombination, child);
+      setTimeout(() => {
+        AIMove(newCurrentCombination, child);
+      }, 500);
     }
-
-    //
-    // AIMove
-    // setTimeout(() => {
-    //   AIMove(newCurrentCombination);
-    // }, 500);
   }
 
   //
