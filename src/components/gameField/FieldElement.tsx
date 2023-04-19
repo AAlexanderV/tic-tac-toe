@@ -9,7 +9,9 @@ function FieldElement({
 }) {
   //
   function clickHandler() {
-    humanMove(index);
+    if (value === "-") {
+      humanMove(index);
+    }
   }
 
   return (

@@ -13,24 +13,18 @@ import checkDraw from "../../app/checkDraw";
 import NodeElement from "../../app/NodeElement";
 
 function GameField() {
-  // const combinationTest = "xoxoxoxox";
-  let humanMovesFirst: boolean;
-  let humanCanMove: boolean;
-  let root: any;
-  // let currentTreeElement: any;
+  // // const combinationTest = "xoxoxoxox";
+  // let humanMovesFirst: boolean;
+  // let humanCanMove: boolean;
+  // let root: any;
+  // // let currentTreeElement: any;
 
-  useEffect(() => {
-    // оформить в USEFFECT{
-    humanMovesFirst = true;
-    humanCanMove = true;
-
-    root = treeFromLS;
-    // currentTreeElement = root;
-    // оформить в USEFFECT}
-  });
-
-  const [currentTreeElement, setCurrentTreeElement] = useState(treeFromLS);
+  const [root, setRoot] = useState(treeFromLS);
+  const [currentTreeElement, setCurrentTreeElement] = useState(root);
   const [currentCombination, setCurrentCombination] = useState(currentTreeElement.combination);
+
+  const [humanCanMove, setHumanCanMove] = useState(true);
+  const [humanMovesFirst, setHumanMovesFirst] = useState(true);
 
   const [winner, setWinner] = useState<string | null>(null);
   const [isDraw, setDraw] = useState<boolean>(false);
@@ -40,8 +34,21 @@ function GameField() {
   const [drawCounter, setDrawCounter] = useState(drawsFromLS);
 
   //
-  console.log(currentCombination);
+  // console.log(currentCombination);
   //
+
+  useEffect(() => {
+    const AIWon = checkVictory(currentTreeElement.combination); // => x || o || false
+    // setDraw(checkDraw(currentTreeElement.combination));
+
+    if (AIWon) {
+      setWinner("AI");
+
+      setAIScore(AIScore + 1);
+      localStorage.setItem("AIScore", JSON.stringify(AIScore + 1));
+      setHumanCanMove(false);
+    }
+  }, [winner, AIScore, humanCanMove, currentTreeElement.combination]);
 
   //
   // HUMAN made a move:
@@ -50,7 +57,7 @@ function GameField() {
 
     if (!humanCanMove || winner || isDraw) return;
 
-    humanCanMove = false;
+    setHumanCanMove(false);
     const combinationArray = currentCombination.split("");
     combinationArray[cellIndex] = humanMovesFirst ? "x" : "o";
     const newCurrentCombination = combinationArray.join("");
@@ -86,37 +93,39 @@ function GameField() {
     // check if element has child with the same combination
     const childIndex = childExists(currentTreeElement.children, newCurrentCombination); // Number || false
 
-    if (childIndex) {
-      currentTreeElement = currentTreeElement.children[childIndex];
+    if (childIndex !== false) {
+      setCurrentTreeElement(currentTreeElement.children[childIndex]);
+
+      AIMove(newCurrentCombination, currentTreeElement.children[childIndex]);
     } else {
       const child = new NodeElement(newCurrentCombination);
       currentTreeElement.children.push(child);
-      currentTreeElement = child;
+      setCurrentTreeElement(child);
+      localStorage.setItem("combinationsTree", JSON.stringify(root));
 
       console.log("child", child);
 
-      localStorage.setItem("combinationsTree", JSON.stringify(root));
+      AIMove(newCurrentCombination, child);
     }
 
     //
     // AIMove
-    AIMove(newCurrentCombination);
-    setTimeout(() => {
-      AIMove(newCurrentCombination);
-    }, 500);
+    // setTimeout(() => {
+    //   AIMove(newCurrentCombination);
+    // }, 500);
   }
 
   //
   // AIMove
   //
-  function AIMove(newCurrentCombination: string) {
-    humanCanMove = true;
-    // проверим, есть ли потенциально выигрышные/неисследованные "children"
-    for (let i = 0; i < currentTreeElement.children.length; i++) {
-      if (currentTreeElement.children[i].status === "green") {
-        currentTreeElement = currentTreeElement.children[i];
+  function AIMove(newCurrentCombination: string, treeElement: any) {
+    setHumanCanMove(true);
+    // проверим, есть ли green "children"
+    for (let i = 0; i < treeElement.children.length; i++) {
+      if (treeElement.children[i].status === "green") {
+        setCurrentTreeElement(treeElement.children[i]);
 
-        setCurrentCombination(currentTreeElement.combination);
+        setCurrentCombination(treeElement.children[i].combination);
 
         return;
       }
@@ -129,16 +138,15 @@ function GameField() {
       if (arrCombination[j] === "-") {
         arrCombination[j] = humanMovesFirst ? "o" : "x";
 
-        if (childExists(currentTreeElement.children, arrCombination.join(""))) {
+        if (childExists(treeElement.children, arrCombination.join("")) !== false) {
           arrCombination[j] = "-";
         } else {
           const newChild = new NodeElement(arrCombination.join(""));
-          currentTreeElement.children.push(newChild);
-          currentTreeElement = newChild;
-
+          treeElement.children.push(newChild);
+          setCurrentTreeElement(newChild);
           localStorage.setItem("combinationsTree", JSON.stringify(root));
 
-          setCurrentCombination(currentTreeElement.combination);
+          setCurrentCombination(newChild.combination);
 
           return;
         }
@@ -146,50 +154,40 @@ function GameField() {
     }
 
     //if all routes exist, find "yellow"
-    for (let i = 0; i < currentTreeElement.children.length; i++) {
-      if (currentTreeElement.children[i].status === "yellow") {
+    for (let i = 0; i < treeElement.children.length; i++) {
+      if (treeElement.children[i].status === "yellow") {
         // if we enter here & found yellow, then parent el should be yellow as well
-        currentTreeElement.status = "yellow";
+        treeElement.status = "yellow";
         localStorage.setItem("combinationsTree", JSON.stringify(root));
 
-        currentTreeElement = currentTreeElement.children[i];
+        setCurrentTreeElement(treeElement.children[i]);
 
-        setCurrentCombination(currentTreeElement.combination);
+        setCurrentCombination(treeElement.children[i].combination);
 
         return;
       }
     }
 
-    // propose draw
-    setDraw(window.confirm("Do you want a draw?"));
+    // no green, no free space, no yellow => it's red
     currentTreeElement.status = "red";
+    localStorage.setItem("combinationsTree", JSON.stringify(root));
+
+    // propose draw
+    const drawAccepted = window.confirm("Do you want a draw?");
 
     //make some random move
-    if (!isDraw) {
-      const randomIndex = Math.floor(Math.random() * currentTreeElement.children.length - 1);
-      currentTreeElement = currentTreeElement.children[randomIndex];
-
-      setCurrentCombination(currentTreeElement.combination);
-    }
-
-    if (isDraw) return;
-
-    const AIWon = checkVictory(currentTreeElement.combination); // => x || o || false
-    // setDraw(checkDraw(currentTreeElement.combination));
-
-    if (AIWon) {
-      setWinner("AI");
-
-      setAIScore(AIScore + 1);
-      localStorage.setItem("AIScore", JSON.stringify(AIScore + 1));
-      humanCanMove = false;
-    } else if (isDraw) {
-      // currentTreeElement.status = "yellow";
-      // localStorage.setItem("combinationsTree", JSON.stringify(root));
+    if (drawAccepted) {
+      setDraw(drawAccepted);
 
       setDrawCounter(drawCounter + 1);
       localStorage.setItem("draws", JSON.stringify(drawCounter + 1));
-      humanCanMove = false;
+
+      setHumanCanMove(false);
+    } else {
+      const randomIndex = Math.floor(Math.random() * currentTreeElement.children.length - 1);
+      setCurrentTreeElement(treeElement.children[randomIndex]);
+
+      setCurrentCombination(currentTreeElement.combination);
     }
   }
 
